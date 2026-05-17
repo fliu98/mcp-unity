@@ -281,6 +281,10 @@ namespace McpUnity.Unity
 
             ShowConfigButton("Google Antigravity", McpUtils.AddToAntigravityConfig);
 
+            EditorGUILayout.Space();
+
+            ShowConfigButton("OpenCode", McpUtils.AddToOpenCodeConfig);
+
             EditorGUILayout.Separator();
             EditorGUILayout.Separator();
 

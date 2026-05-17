@@ -41,7 +41,7 @@
      ╚═╝     ╚═╝ ╚═════╝╚═╝              ╚═════╝ ╚═╝  ╚═══╝╚═╝   ╚═╝      ╚═╝   
 ```       
 
-MCP Unity is an implementation of the Model Context Protocol for Unity Editor, allowing AI assistants to interact with your Unity projects. This package provides a bridge between Unity and a Node.js server that implements the MCP protocol, enabling AI agents like Cursor, Windsurf, Claude Code, Codex CLI, GitHub Copilot, and Google Antigravity to execute operations within the Unity Editor.
+MCP Unity is an implementation of the Model Context Protocol for Unity Editor, allowing AI assistants to interact with your Unity projects. This package provides a bridge between Unity and a Node.js server that implements the MCP protocol, enabling AI agents like Cursor, Windsurf, Claude Code, Codex CLI, GitHub Copilot, Google Antigravity, and OpenCode to execute operations within the Unity Editor.
 
 ## Features
 
@@ -277,13 +277,29 @@ command = "node"
 args = ["ABSOLUTE/PATH/TO/mcp-unity/Server~/build/index.js"]
 ```
 
+**For OpenCode** (`opencode.json` in the Unity project root):
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "mcp-unity": {
+      "type": "local",
+      "enabled": true,
+      "command": ["node", "ABSOLUTE/PATH/TO/mcp-unity/Server~/build/index.js"],
+      "environment": {}
+    }
+  }
+}
+```
+
 </details>
 
 ## <a name="start-server"></a>Start Unity Editor MCP Server
 1. Open the Unity Editor
 2. Navigate to Tools > MCP Unity > Server Window
 3. Click "Start Server" to start the WebSocket server
-4. Open your AI Coding IDE (e.g. Cursor, Windsurf, Claude Code, Codex CLI, GitHub Copilot, Google Antigravity, etc.) and start executing Unity tools
+4. Open your AI Coding IDE (e.g. Cursor, Windsurf, Claude Code, Codex CLI, GitHub Copilot, Google Antigravity, OpenCode, etc.) and start executing Unity tools
    
 ![connect](https://github.com/user-attachments/assets/2e266a8b-8ba3-4902-b585-b220b11ab9a2)
 
@@ -459,6 +475,7 @@ MCP Unity is designed to work with any AI assistant or development environment t
 -  Codex CLI
 -  GitHub Copilot
 -  Google Antigravity
+-  OpenCode
 
 </details>
 

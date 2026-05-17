@@ -68,6 +68,55 @@ namespace McpUnity.Utils
         }
 
         /// <summary>
+        /// Generates the MCP configuration JSON for OpenCode (https://opencode.ai/).
+        /// OpenCode uses a different schema than the standard `mcpServers` shape:
+        ///   { "$schema": ..., "mcp": { "mcp-unity": { "type": "local", "enabled": true, "command": [...], "environment": {} } } }
+        /// </summary>
+        public static string GenerateOpenCodeConfigJson(bool useTabsIndentation)
+        {
+            string indexJsPath = Path.Combine(GetServerPath(), "build", "index.js");
+
+            var config = new Dictionary<string, object>
+            {
+                { "$schema", "https://opencode.ai/config.json" },
+                { "mcp", new Dictionary<string, object>
+                    {
+                        { "mcp-unity", new Dictionary<string, object>
+                            {
+                                { "type", "local" },
+                                { "enabled", true },
+                                { "command", new[] { "node", indexJsPath } },
+                                { "environment", new Dictionary<string, object>() }
+                            }
+                        }
+                    }
+                }
+            };
+
+            var stringWriter = new StringWriter();
+            using (var jsonWriter = new JsonTextWriter(stringWriter))
+            {
+                jsonWriter.Formatting = Formatting.Indented;
+
+                if (useTabsIndentation)
+                {
+                    jsonWriter.IndentChar = '\t';
+                    jsonWriter.Indentation = 1;
+                }
+                else
+                {
+                    jsonWriter.IndentChar = ' ';
+                    jsonWriter.Indentation = 2;
+                }
+
+                var serializer = new JsonSerializer();
+                serializer.Serialize(jsonWriter, config);
+            }
+
+            return stringWriter.ToString().Replace("\\", "/").Replace("//", "/");
+        }
+
+        /// <summary>
         /// Generates the MCP configuration TOML to setup the Unity MCP server in TOML-based AI Clients (e.g., Codex CLI)
         /// </summary>
         /// <returns>The TOML configuration string for mcp-unity server</returns>
@@ -240,6 +289,16 @@ namespace McpUnity.Utils
         }
 
         /// <summary>
+        /// Adds the MCP configuration to the OpenCode config file (opencode.json in project root).
+        /// OpenCode uses a custom JSON schema, so this does not reuse the standard mcpServers helpers.
+        /// </summary>
+        public static bool AddToOpenCodeConfig(bool useTabsIndentation)
+        {
+            string configFilePath = GetOpenCodeConfigPath();
+            return AddToOpenCodeConfigFile(configFilePath, useTabsIndentation);
+        }
+
+        /// <summary>
         /// Returns whether automatic MCP configuration is supported for the given product on the current platform.
         /// </summary>
         public static bool IsAutoConfigSupported(string productName)
@@ -249,6 +308,7 @@ namespace McpUnity.Utils
                 case "Claude Code":
                 case "Codex CLI":
                 case "GitHub Copilot":
+                case "OpenCode":
                     return Application.platform == RuntimePlatform.WindowsEditor
                         || Application.platform == RuntimePlatform.OSXEditor
                         || Application.platform == RuntimePlatform.LinuxEditor;
@@ -275,7 +335,7 @@ namespace McpUnity.Utils
 
             if (Application.platform == RuntimePlatform.LinuxEditor)
             {
-                return $"Automatic {productName} configuration is currently available on Linux only for Claude Code, Codex CLI, and GitHub Copilot.";
+                return $"Automatic {productName} configuration is currently available on Linux only for Claude Code, Codex CLI, GitHub Copilot, and OpenCode.";
             }
 
             return $"Automatic {productName} configuration is not supported on {Application.platform}.";
@@ -479,6 +539,73 @@ namespace McpUnity.Utils
             string projectRoot = Directory.GetParent(Application.dataPath).FullName;
             string vscodeDir = Path.Combine(projectRoot, ".vscode");
             return Path.Combine(vscodeDir, "mcp.json");
+        }
+
+        /// <summary>
+        /// Gets the path to the OpenCode config file (opencode.json in the Unity project root).
+        /// OpenCode reads its config per-project, not per-user, so this path is OS-independent.
+        /// </summary>
+        /// <returns>The path to the OpenCode config file</returns>
+        private static string GetOpenCodeConfigPath()
+        {
+            string projectRoot = Directory.GetParent(Application.dataPath).FullName;
+            return Path.Combine(projectRoot, "opencode.json");
+        }
+
+        /// <summary>
+        /// Adds the MCP configuration to the OpenCode config file. Preserves existing
+        /// `$schema` and any unrelated entries under `mcp`, only upserting `mcp["mcp-unity"]`.
+        /// </summary>
+        private static bool AddToOpenCodeConfigFile(string configFilePath, bool useTabsIndentation)
+        {
+            const string productName = "OpenCode";
+
+            if (string.IsNullOrEmpty(configFilePath))
+            {
+                Debug.LogError($"{productName} config file path could not be resolved.");
+                return false;
+            }
+
+            try
+            {
+                string mcpConfigJson = GenerateOpenCodeConfigJson(useTabsIndentation);
+                JObject mcpConfig = JObject.Parse(mcpConfigJson);
+                JToken newServerEntry = mcpConfig["mcp"]?["mcp-unity"];
+
+                if (newServerEntry == null)
+                {
+                    Debug.LogError($"Failed to generate {productName} configuration: missing mcp-unity entry.");
+                    return false;
+                }
+
+                if (!File.Exists(configFilePath))
+                {
+                    File.WriteAllText(configFilePath, mcpConfigJson);
+                    return true;
+                }
+
+                string existingJson = File.ReadAllText(configFilePath);
+                JObject existingConfig = string.IsNullOrWhiteSpace(existingJson)
+                    ? new JObject()
+                    : JObject.Parse(existingJson);
+
+                JObject mcpSection = existingConfig["mcp"] as JObject;
+                if (mcpSection == null)
+                {
+                    mcpSection = new JObject();
+                    existingConfig["mcp"] = mcpSection;
+                }
+
+                mcpSection["mcp-unity"] = newServerEntry;
+
+                File.WriteAllText(configFilePath, existingConfig.ToString(Formatting.Indented));
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"Failed to add MCP configuration to {productName}: {ex}");
+                return false;
+            }
         }
 
         /// <summary>
