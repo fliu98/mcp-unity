@@ -173,13 +173,13 @@ namespace McpUnity.Tools
         /// <summary>
         /// Find a GameObject by instance ID or path
         /// </summary>
-        public static GameObject FindGameObject(int? instanceId, string objectPath)
+        public static GameObject FindGameObject(long? instanceId, string objectPath)
         {
             GameObject gameObject = null;
 
             if (instanceId.HasValue)
             {
-                gameObject = EditorUtility.InstanceIDToObject(instanceId.Value) as GameObject;
+                gameObject = EditorUtility.EntityIdToObject(EntityId.FromULong((ulong)instanceId.Value)) as GameObject;
             }
             else if (!string.IsNullOrEmpty(objectPath))
             {
@@ -446,10 +446,10 @@ namespace McpUnity.Tools
         public override JObject Execute(JObject parameters)
         {
             // Extract parameters
-            int? instanceId = parameters["instanceId"]?.ToObject<int?>();
+            long? instanceId = parameters["instanceId"]?.ToObject<long?>();
             string objectPath = parameters["objectPath"]?.ToObject<string>();
             string materialPath = parameters["materialPath"]?.ToObject<string>();
-            int slot = parameters["slot"]?.ToObject<int?>() ?? 0;
+            int slot = parameters["slot"]?.ToObject<long?>() ?? 0;
 
             // Validate parameters
             if (!instanceId.HasValue && string.IsNullOrEmpty(objectPath))

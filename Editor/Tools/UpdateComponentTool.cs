@@ -26,7 +26,7 @@ namespace McpUnity.Tools
         public override JObject Execute(JObject parameters)
         {
             // Extract parameters
-            int? instanceId = parameters["instanceId"]?.ToObject<int?>();
+            long? instanceId = parameters["instanceId"]?.ToObject<long?>();
             string objectPath = parameters["objectPath"]?.ToObject<string>();
             string componentName = parameters["componentName"]?.ToObject<string>();
             JObject componentData = parameters["componentData"] as JObject;
@@ -54,7 +54,7 @@ namespace McpUnity.Tools
             
             if (instanceId.HasValue)
             {
-                gameObject = EditorUtility.InstanceIDToObject(instanceId.Value) as GameObject;
+                gameObject = EditorUtility.EntityIdToObject(EntityId.FromULong((ulong)instanceId.Value)) as GameObject;
                 identifier = $"ID {instanceId.Value}";
             }
             else
@@ -406,7 +406,7 @@ namespace McpUnity.Tools
                     }
                     
                     // If parsing fails, try to convert numeric value
-                    if (int.TryParse(enumName, out int enumValue))
+                    if (long.TryParse(enumName, out long enumValue))
                     {
                         return Enum.ToObject(targetType, enumValue);
                     }

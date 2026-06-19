@@ -50,10 +50,10 @@ namespace McpUnity.Tools
             GameObject gameObject = null;
 
             // Try to parse as an instance ID first
-            if (int.TryParse(idOrName, out int instanceId))
+            if (long.TryParse(idOrName, out long instanceId))
             {
                 // Unity Instance IDs are typically negative, but we'll accept any integer
-                UnityEngine.Object unityObject = EditorUtility.InstanceIDToObject(instanceId);
+                UnityEngine.Object unityObject = EditorUtility.EntityIdToObject(EntityId.FromULong((ulong)instanceId));
                 gameObject = unityObject as GameObject;
             }
             else
@@ -71,7 +71,7 @@ namespace McpUnity.Tools
                 );
             }
 
-            int maxDepth = parameters["maxDepth"]?.ToObject<int?>() ?? GetGameObjectResource.DefaultMaxChildDepth;
+            int maxDepth = parameters["maxDepth"]?.ToObject<long?>() ?? GetGameObjectResource.DefaultMaxChildDepth;
             bool includeComponents = parameters["includeComponents"]?.ToObject<bool?>() ?? true;
             bool includeComponentProperties = parameters["includeComponentProperties"]?.ToObject<bool?>() ?? true;
 
@@ -85,7 +85,7 @@ namespace McpUnity.Tools
                 ["success"] = true,
                 ["message"] = $"Retrieved GameObject data for '{gameObject.name}'",
                 ["gameObject"] = gameObjectData,
-                ["instanceId"] = gameObject.GetInstanceID()
+                ["instanceId"] = (long)EntityId.ToULong(gameObject.GetEntityId())
             };
         }
     }

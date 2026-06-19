@@ -7,7 +7,7 @@ namespace McpUnity.Models
     public class UpdateGameObjectRequest
     {
         [JsonProperty("instanceId")]
-        public int? InstanceId { get; set; }
+        public long? InstanceId { get; set; }
 
         [JsonProperty("objectPath")]
         public string ObjectPath { get; set; }

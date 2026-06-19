@@ -24,18 +24,18 @@ namespace McpUnity.Tools
         /// <summary>
         /// Executes the update or creation of a GameObject based on the provided parameters.
         /// </summary>
-        /// <param name="parameters">A JObject containing: instanceId (int?), objectPath (string), name (string), tag (string), layer (int?), isActiveSelf (bool?), isStatic (bool?)</param>
+        /// <param name="parameters">A JObject containing: instanceId (long?), objectPath (string), name (string), tag (string), layer (int?), isActiveSelf (bool?), isStatic (bool?)</param>
         /// <returns>JObject with success, message, instanceId, name, and path fields (see UpdateComponentTool for format)</returns>
         public override JObject Execute(JObject parameters)
         {
             // Extract parameters from JObject
-            int? instanceId = parameters["instanceId"]?.ToObject<int?>();
+            long? instanceId = parameters["instanceId"]?.ToObject<long?>();
             string objectPath = parameters["objectPath"]?.ToObject<string>();
             JObject gameObjectData = parameters["gameObjectData"] as JObject;
 
             string newName = gameObjectData? ["name"]?.ToObject<string>();
             string newTag = gameObjectData? ["tag"]?.ToObject<string>();
-            int? newLayer = gameObjectData? ["layer"]?.ToObject<int?>();
+            int? newLayer = gameObjectData? ["layer"]?.ToObject<long?>();
             bool? newIsActiveSelf = (gameObjectData?["activeSelf"] ?? gameObjectData?["isActiveSelf"])?.ToObject<bool?>();
             bool? newIsStatic = (gameObjectData?["isStatic"] ?? gameObjectData?["static"])?.ToObject<bool?>();
 
@@ -45,7 +45,7 @@ namespace McpUnity.Tools
             // Identify or create the GameObject by instanceId or objectPath
             if (instanceId.HasValue)
             {
-                targetGameObject = EditorUtility.InstanceIDToObject(instanceId.Value) as GameObject;
+                targetGameObject = EditorUtility.EntityIdToObject(EntityId.FromULong((ulong)instanceId.Value)) as GameObject;
                 identifierInfo = $"instance ID {instanceId.Value}";
             }
             else if (!string.IsNullOrEmpty(objectPath))
@@ -135,7 +135,7 @@ namespace McpUnity.Tools
                 ["message"] = propertiesUpdated
                     ? $"GameObject '{targetGameObject.name}' (identified by {identifierInfo}) updated successfully."
                     : $"No properties were changed for GameObject '{targetGameObject.name}' (identified by {identifierInfo}).",
-                ["instanceId"] = targetGameObject.GetInstanceID(),
+                ["instanceId"] = (long)EntityId.ToULong(targetGameObject.GetEntityId()),
                 ["name"] = targetGameObject.name,
                 ["path"] = GetGameObjectPath(targetGameObject)
             };
