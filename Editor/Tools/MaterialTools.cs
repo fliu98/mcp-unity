@@ -449,7 +449,7 @@ namespace McpUnity.Tools
             long? instanceId = parameters["instanceId"]?.ToObject<long?>();
             string objectPath = parameters["objectPath"]?.ToObject<string>();
             string materialPath = parameters["materialPath"]?.ToObject<string>();
-            int slot = parameters["slot"]?.ToObject<long?>() ?? 0;
+            int slot = parameters["slot"]?.ToObject<int?>() ?? 0;
 
             // Validate parameters
             if (!instanceId.HasValue && string.IsNullOrEmpty(objectPath))

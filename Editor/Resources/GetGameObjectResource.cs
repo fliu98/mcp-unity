@@ -87,7 +87,7 @@ namespace McpUnity.Resources
                 };
             }
 
-            int maxDepth = parameters["maxDepth"]?.ToObject<long?>() ?? DefaultMaxChildDepth;
+            int maxDepth = parameters["maxDepth"]?.ToObject<int?>() ?? DefaultMaxChildDepth;
             bool includeComponents = parameters["includeComponents"]?.ToObject<bool?>() ?? true;
             bool includeComponentProperties = parameters["includeComponentProperties"]?.ToObject<bool?>() ?? true;
 

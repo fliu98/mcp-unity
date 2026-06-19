@@ -131,7 +131,7 @@ namespace McpUnity.Tools
             string newName = parameters["newName"]?.ToObject<string>();
             string newParentPath = parameters["newParent"]?.ToObject<string>();
             long? newParentId = parameters["newParentId"]?.ToObject<long?>();
-            int count = parameters["count"]?.ToObject<long?>() ?? 1;
+            int count = parameters["count"]?.ToObject<int?>() ?? 1;
 
             // Validate count
             if (count < 1 || count > 100)
