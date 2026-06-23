@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -26,6 +27,45 @@ namespace McpUnity.Unity
         private readonly McpUnityServer _server;
         private readonly int _connectionGeneration;
 
+        // Main-thread dispatch queue – allows MCP requests to be processed
+        // even when the Editor is backgrounded.  EditorApplication.delayCall
+        // stalls indefinitely backgrounded in Unity 6000.5 macOS, even with
+        // InteractionMode=No Throttling + NSAppSleepDisabled + caffeinate.
+        // EditorApplication.update DOES fire backgrounded (~3 Hz), so we
+        // pump a ConcurrentQueue from update instead of using delayCall.
+        // This keeps all UnityEngine API calls on the main thread (safe),
+        // avoids the delayCall background stall, and avoids the
+        // update+=handler leak that causes infinite re-execution spam.
+        private static readonly ConcurrentQueue<Action> _mainThreadQueue = new();
+        private static bool _updateHandlerRegistered;
+        private static readonly object _updateLock = new object();
+
+        /// <summary>
+        /// Ensure the main-thread update pump is registered.
+        /// MUST be called from the main thread (e.g. McpUnityServer.Start).
+        /// </summary>
+        public static void EnsureMainThreadPump()
+        {
+            lock (_updateLock)
+            {
+                if (_updateHandlerRegistered) return;
+                EditorApplication.update += ProcessMainThreadQueue;
+                _updateHandlerRegistered = true;
+            }
+        }
+
+        private static void ProcessMainThreadQueue()
+        {
+            while (_mainThreadQueue.TryDequeue(out var action))
+            {
+                try { action(); }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"[MCP Unity] Error in main-thread queue: {ex}");
+                }
+            }
+        }
+
         /// <summary>
         /// Creates a WebSocket handler for the active server generation.
         /// </summary>
@@ -52,7 +92,7 @@ namespace McpUnity.Unity
                 }
             };
         }
-        
+
         /// <summary>
         /// Handle incoming messages from WebSocket clients.
         /// WebSocketSharp invokes this on a background thread; we marshal the entire
@@ -73,7 +113,12 @@ namespace McpUnity.Unity
             }
 
             string data = e.Data;
-            EditorApplication.delayCall += () => HandleMessageAsync(data);
+            // Use ConcurrentQueue + EditorApplication.update pump
+            // instead of delayCall – delayCall stalls indefinitely backgrounded
+            // in Unity 6000.5 macOS, even with InteractionMode=No Throttling.
+            // update fires backgrounded (~3 Hz), giving ~300ms latency vs 60s+.
+            // ConcurrentQueue is thread-safe, no Unity API touched here.
+            _mainThreadQueue.Enqueue(() => HandleMessageAsync(data));
         }
 
         /// <summary>

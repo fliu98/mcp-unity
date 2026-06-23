@@ -293,6 +293,11 @@ namespace McpUnity.Unity
                 _webSocketServer = webSocketServer;
                 _activeConnectionGeneration = connectionGeneration;
                 McpLogger.LogInfo($"WebSocket server started successfully on {host}:{McpUnitySettings.Instance.Port}.");
+                
+                // Pump MCP requests via EditorApplication.update + ConcurrentQueue
+                // instead of delayCall – delayCall stalls backgrounded in Unity 6000.5 macOS
+                McpUnitySocketHandler.EnsureMainThreadPump();
+                
                 return StartServerResult.Started;
             }
             catch (SocketException ex) when (ex.SocketErrorCode == SocketError.AddressAlreadyInUse)
